@@ -33,9 +33,10 @@ def ask_pdf_question(vectorstore, question):
     )
 
     llm = ChatGoogleGenerativeAI(
-    model="gemini-3.8-flash",
-    google_api_key=api_key
-   )
+        model="gemini-3.8-flash",
+        temperature=0.2,
+        google_api_key=api_key
+    )
 
     prompt = f"""
 You are an intelligent PDF assistant.

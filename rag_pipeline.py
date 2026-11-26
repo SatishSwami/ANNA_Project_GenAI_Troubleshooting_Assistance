@@ -60,17 +60,18 @@ def load_rag_pipeline():
         allow_dangerous_deserialization=True
     )
 
-    # Configure retriever
+        # Configure retriever
     retriever = vectorstore.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": 4}
+        search_kwargs={"k": 2}
     )
 
     # Initialize Gemini
     llm = ChatGoogleGenerativeAI(
-    model=GEMINI_MODEL,
-    google_api_key=api_key
-   )
+        model=GEMINI_MODEL,
+        temperature=0.2,
+        google_api_key=api_key
+    )
 
     print("RAG pipeline loaded successfully!")
 
