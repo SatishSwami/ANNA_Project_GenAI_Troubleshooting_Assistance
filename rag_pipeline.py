@@ -1,3 +1,4 @@
+
 import os
 import streamlit as st
 
@@ -10,12 +11,29 @@ from langchain_community.vectorstores import FAISS
 
 load_dotenv()
 
-load_dotenv()
-
 # Configuration
 FAISS_DIRECTORY = "faiss_index_v2"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 GEMINI_MODEL = "gemini-2.5-flash"
+
+
+def get_api_key():
+    """Read Gemini API key from local environment or Streamlit secrets."""
+
+    api_key = os.getenv("GOOGLE_API_KEY")
+
+    if not api_key:
+        try:
+            api_key = st.secrets.get("GOOGLE_API_KEY")
+        except Exception:
+            api_key = None
+
+    if not api_key:
+        raise ValueError(
+            "GOOGLE_API_KEY not found. Check your .env or Streamlit secrets."
+        )
+
+    return api_key
 
 
 @lru_cache(maxsize=1)
@@ -23,32 +41,17 @@ def load_rag_pipeline():
 
     print("Loading RAG pipeline...")
 
-    # Step 1: Validate API key
-    import streamlit as st
+    api_key = get_api_key()
 
-api_key = os.getenv("GOOGLE_API_KEY")
-
-if not api_key:
-    try:
-        api_key = st.secrets["GOOGLE_API_KEY"]
-    except (KeyError, FileNotFoundError):
-        api_key = None
-
-    if not api_key:
-        raise ValueError(
-            "GOOGLE_API_KEY not found. Check your .env file."
-        )
-
-    # Step 2: Load embedding model
+    # Load embedding model
     embeddings = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL
     )
 
-    # Step 3: Load new FAISS index
+    # Load FAISS index
     if not os.path.exists(FAISS_DIRECTORY):
         raise FileNotFoundError(
-            f"FAISS index not found: {FAISS_DIRECTORY}. "
-            "Run ingest.py first."
+            f"FAISS index not found: {FAISS_DIRECTORY}. Run ingest.py first."
         )
 
     vectorstore = FAISS.load_local(
@@ -57,13 +60,13 @@ if not api_key:
         allow_dangerous_deserialization=True
     )
 
-    # Step 4: Configure retriever
+    # Configure retriever
     retriever = vectorstore.as_retriever(
         search_type="similarity",
         search_kwargs={"k": 4}
     )
 
-    # Step 5: Initialize Gemini
+    # Initialize Gemini
     llm = ChatGoogleGenerativeAI(
         model=GEMINI_MODEL,
         temperature=0.2,
@@ -80,29 +83,24 @@ def get_answer(question):
     if not question or not question.strip():
         raise ValueError("Please enter a valid question.")
 
-    # Step 1: Get loaded pipeline
     retriever, llm = load_rag_pipeline()
 
-    # Step 2: Retrieve relevant chunks
+    # Retrieve relevant chunks
     docs = retriever.invoke(question)
 
     if not docs:
         return {
-            "answer": (
-                "The information is not available "
-                "in the knowledge base."
-            ),
+            "answer": "The information is not available in the knowledge base.",
             "sources": [],
             "source_details": [],
             "retrieved_chunks": []
         }
 
-    # Step 3: Prepare context with source information
     context_parts = []
-
     sources = []
     source_details = []
 
+    # Prepare context and source information
     for doc in docs:
 
         source_file = doc.metadata.get(
@@ -120,11 +118,9 @@ def get_answer(question):
             "page": page_number
         }
 
-        # Keep unique source filenames
         if source_file not in sources:
             sources.append(source_file)
 
-        # Keep unique document and page details
         if source_info not in source_details:
             source_details.append(source_info)
 
@@ -140,7 +136,7 @@ Content:
 
     context = "\n\n".join(context_parts)
 
-    # Step 4: Construct prompt
+    # Grounded response prompt
     prompt = f"""
 You are an expert Network Troubleshooting Assistant.
 
@@ -168,10 +164,9 @@ User Question:
 Answer:
 """
 
-    # Step 5: Generate answer
+    # Generate answer
     response = llm.invoke(prompt)
 
-    # Step 6: Return answer and sources
     return {
         "answer": response.content,
         "sources": sources,
