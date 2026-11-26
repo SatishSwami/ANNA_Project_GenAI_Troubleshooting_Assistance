@@ -14,7 +14,7 @@ load_dotenv()
 # Configuration
 FAISS_DIRECTORY = "faiss_index_v2"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-GEMINI_MODEL = "gemini-3.8-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
 
 
 def get_api_key():
