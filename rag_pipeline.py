@@ -14,7 +14,7 @@ load_dotenv()
 # Configuration
 FAISS_DIRECTORY = "faiss_index_v2"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-3.8-flash"
 
 
 def get_api_key():
@@ -68,10 +68,9 @@ def load_rag_pipeline():
 
     # Initialize Gemini
     llm = ChatGoogleGenerativeAI(
-        model=GEMINI_MODEL,
-        temperature=0.2,
-        google_api_key=api_key
-    )
+    model=GEMINI_MODEL,
+    google_api_key=api_key
+   )
 
     print("RAG pipeline loaded successfully!")
 
